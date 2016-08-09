@@ -31,14 +31,14 @@ class AkkaController @Inject() extends Controller with App {
 
     def fromBytes(x: Array[Byte]) = new String(x, "UTF-8")
 
-    def toBytes(x: Long) = x.toString.getBytes("UTF-8")
+    def toBytes(x: String) = x.getBytes("UTF-8")
 
     def setupPublisher(channel: Channel, self: ActorRef) {
       val queue = channel.queueDeclare().getQueue
       channel.queueBind(queue, exchange, "")
     }
 
-    def setupSubscriber(channel: Channel, self: ActorRef) {
+    /*def setupSubscriber(channel: Channel, self: ActorRef) {
       val queue = channel.queueDeclare().getQueue
       channel.queueBind(queue, exchange, "")
       val consumer = new DefaultConsumer(channel) {
@@ -47,17 +47,20 @@ class AkkaController @Inject() extends Controller with App {
         }
       }
       channel.basicConsume(queue, true, consumer)
-    }
+    }*/
 
     def closeConnection() ={
       system stop connection
     }
 
     connection ! CreateChannel(ChannelActor.props(setupPublisher), Some("publisher"))
-    connection ! CreateChannel(ChannelActor.props(setupSubscriber), Some("subscriber"))
+    //connection ! CreateChannel(ChannelActor.props(setupSubscriber), Some("subscriber"))
 
     Future {
-      def loop(n: Long) {
+      var temp: Int = 0
+      val ORDERLINEDATA = "01,20"
+
+      def loop(n: String) {
         val publisher = system.actorSelection("/user/rabbitmq/publisher")
 
         def publish(channel: Channel) {
@@ -66,10 +69,13 @@ class AkkaController @Inject() extends Controller with App {
         publisher ! ChannelMessage(publish, dropIfNoChannel = false)
 
         Thread.sleep(1000)
-        if (n < 10)
-          loop(n + 1)
+        temp = temp + 1
+        //if (temp < 10)
+          //loop(ORDERLINEDATA)
       }
-      loop(0)
+      Thread.sleep(3000)
+      loop(ORDERLINEDATA)
+      Thread.sleep(3000)
       closeConnection()
     }
     Ok(views.html.index("Your new application is ready."))
